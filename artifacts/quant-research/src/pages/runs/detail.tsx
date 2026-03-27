@@ -2,7 +2,7 @@ import { useRoute, Link } from "wouter";
 import { useRunDetail } from "@/hooks/use-runs";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@/components/ui";
 import { ArrowLeft, CheckCircle2, CircleDashed, Loader2, XCircle, AlertCircle, BarChart3 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { EquityCurveChart } from "@/components/chart";
 
 export default function RunDetail() {
