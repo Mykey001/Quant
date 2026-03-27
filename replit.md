@@ -15,33 +15,60 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
+- **AI**: OpenAI via Replit AI Integrations (`gpt-5-mini`)
+- **File upload**: multer (supports MQ5, PineScript, Python, MQL4, etc.)
 
 ## Structure
 
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── api-server/         # Express API server
+│   └── quant-research/     # React + Vite frontend (trading research platform)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
+│   ├── db/                 # Drizzle ORM schema + DB connection
+│   └── integrations-openai-ai-server/  # OpenAI AI integration client
+├── scripts/                # Utility scripts
+├── pnpm-workspace.yaml     # pnpm workspace
+├── tsconfig.base.json      # Shared TS options
 ├── tsconfig.json           # Root TS project references
 └── package.json            # Root package with hoisted devDeps
 ```
 
+## Features
+
+### Quant Research Platform (`artifacts/quant-research`)
+
+A full-stack quantitative trading research platform with:
+
+1. **File Upload** - Drag and drop or browse to upload trading strategy files (.mq5, .mql4, .pine, .py, .txt and more)
+2. **10-Step AI Analysis Pipeline** - Automated pipeline powered by GPT:
+   - Step 1: Strategy Deconstruction
+   - Step 2: Data Collection & Preparation
+   - Step 3: Baseline Backtest
+   - Step 4: Market Regime Segmentation
+   - Step 5: Model Training & Adaptation
+   - Step 6: Parameter Optimization
+   - Step 7: Validation (Out-of-Sample)
+   - Step 8: Walk-Forward Analysis
+   - Step 9: Risk & Failure Analysis
+   - Step 10: Final Output & Recommendations
+3. **Live Progress Tracking** - Real-time step-by-step progress as each agent runs
+4. **Metrics & Charts** - Sharpe ratio, Sortino ratio, max drawdown, win rate, profit factor, and more
+5. **Dark trading terminal UI** with sidebar navigation
+
+## Database Schema
+
+- `strategies` - Uploaded trading strategy files
+- `analysis_runs` - Analysis pipeline runs per strategy
+- `step_results` - Individual step results for each run (10 steps per run)
+
 ## TypeScript & Composite Projects
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
-
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references.
 
 ## Root Scripts
 
@@ -52,45 +79,33 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+Express 5 API server. Routes:
+- `GET /api/strategies` — list all strategies
+- `POST /api/strategies` — upload strategy file (multipart/form-data)
+- `GET /api/strategies/:id` — get strategy details
+- `DELETE /api/strategies/:id` — delete strategy
+- `POST /api/strategies/:id/analyze` — start 10-step analysis pipeline
+- `GET /api/runs` — list all analysis runs
+- `GET /api/runs/:id` — get run details
+- `GET /api/runs/:id/steps` — get step results for a run
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+### `artifacts/quant-research` (`@workspace/quant-research`)
+
+React + Vite frontend with dark trading terminal theme.
+- Dashboard, Strategies list/detail, Analysis Runs list/detail pages
+- Recharts for metrics visualization
+- React Dropzone for file upload
+- Framer Motion for animations
 
 ### `lib/db` (`@workspace/db`)
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
-
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+Database layer using Drizzle ORM with PostgreSQL.
 
 ### `lib/api-spec` (`@workspace/api-spec`)
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
+OpenAPI 3.1 spec + Orval codegen config.
 Run codegen: `pnpm --filter @workspace/api-spec run codegen`
 
-### `lib/api-zod` (`@workspace/api-zod`)
+### `lib/integrations-openai-ai-server` (`@workspace/integrations-openai-ai-server`)
 
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+OpenAI client via Replit AI Integrations. Uses env vars `AI_INTEGRATIONS_OPENAI_BASE_URL` and `AI_INTEGRATIONS_OPENAI_API_KEY`.

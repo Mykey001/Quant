@@ -1,0 +1,18 @@
+packages:
+  "framer-motion": "For smooth transitions and step pipeline animations"
+  "recharts": "For rendering equity curves and drawdown charts in the trading terminal"
+  "react-dropzone": "For a premium drag-and-drop strategy file upload experience"
+  "date-fns": "For formatting timestamps"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to safely merge Tailwind CSS classes"
+  "lucide-react": "For icons"
+
+images:
+  - path: "artifacts/quant-research/public/images/terminal-bg.png"
+    description: "Dark, moody abstract background with faint glowing grid lines and subtle cyan and deep blue light leaks, resembling a high-tech quantitative trading server"
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated hooks from @workspace/api-client-react
+  - Implementing polling for analysis runs to show live pipeline progress
+  - UI styled as a professional dark-mode trading terminal

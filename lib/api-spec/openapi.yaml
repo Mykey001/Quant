@@ -1,15 +1,20 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Quantitative Trading Research Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: strategies
+    description: Strategy management
+  - name: analysis
+    description: Analysis operations
+  - name: runs
+    description: Analysis run management
 paths:
   /healthz:
     get:
@@ -24,6 +29,173 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /strategies:
+    get:
+      operationId: listStrategies
+      tags: [strategies]
+      summary: List all uploaded strategies
+      responses:
+        "200":
+          description: List of strategies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Strategy"
+    post:
+      operationId: uploadStrategy
+      tags: [strategies]
+      summary: Upload a strategy file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                name:
+                  type: string
+                description:
+                  type: string
+              required:
+                - file
+      responses:
+        "201":
+          description: Strategy uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Strategy"
+
+  /strategies/{id}:
+    get:
+      operationId: getStrategy
+      tags: [strategies]
+      summary: Get strategy details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Strategy details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Strategy"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteStrategy
+      tags: [strategies]
+      summary: Delete a strategy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /strategies/{id}/analyze:
+    post:
+      operationId: startAnalysis
+      tags: [analysis]
+      summary: Start the 10-step analysis pipeline
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalysisOptions"
+      responses:
+        "202":
+          description: Analysis started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+
+  /runs:
+    get:
+      operationId: listRuns
+      tags: [runs]
+      summary: List all analysis runs
+      responses:
+        "200":
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnalysisRun"
+
+  /runs/{id}:
+    get:
+      operationId: getRun
+      tags: [runs]
+      summary: Get analysis run details and results
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Run details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /runs/{id}/steps:
+    get:
+      operationId: getRunSteps
+      tags: [runs]
+      summary: Get all step results for a run
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Step results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StepResult"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +206,147 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+
+    Strategy:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        fileType:
+          type: string
+          enum: [mq5, pine, python, mql4, txt, other]
+        fileName:
+          type: string
+        fileContent:
+          type: string
+        strategyType:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - fileType
+        - fileName
+        - fileContent
+        - createdAt
+        - updatedAt
+
+    AnalysisOptions:
+      type: object
+      properties:
+        markets:
+          type: array
+          items:
+            type: string
+          default: ["XAUUSD"]
+        timeframes:
+          type: array
+          items:
+            type: string
+          default: ["H1", "D1"]
+        yearsOfData:
+          type: integer
+          default: 10
+        trainSplit:
+          type: number
+          default: 0.7
+        validationSplit:
+          type: number
+          default: 0.15
+
+    AnalysisRun:
+      type: object
+      properties:
+        id:
+          type: integer
+        strategyId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        currentStep:
+          type: integer
+          nullable: true
+        totalSteps:
+          type: integer
+        options:
+          $ref: "#/components/schemas/AnalysisOptions"
+        summary:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - strategyId
+        - status
+        - totalSteps
+        - options
+        - createdAt
+        - updatedAt
+
+    StepResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        runId:
+          type: integer
+        stepNumber:
+          type: integer
+        stepName:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        findings:
+          type: string
+          nullable: true
+        metrics:
+          type: object
+          additionalProperties: true
+          nullable: true
+        recommendations:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - runId
+        - stepNumber
+        - stepName
+        - status
