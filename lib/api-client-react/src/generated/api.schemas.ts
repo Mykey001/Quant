@@ -117,8 +117,55 @@ export interface StepResult {
   completedAt?: string | null;
 }
 
+export interface ColumnStats {
+  name: string;
+  min?: number | null;
+  max?: number | null;
+  mean?: number | null;
+  std?: number | null;
+  nullCount: number;
+}
+
+export interface DatasetRow {
+  [key: string]: unknown;
+}
+
+export interface Dataset {
+  id: number;
+  name: string;
+  asset?: string | null;
+  timeframe?: string | null;
+  fileName: string;
+  fileType: string;
+  rowCount: number;
+  columns: string[];
+  startDate?: string | null;
+  endDate?: string | null;
+  columnStats?: ColumnStats[] | null;
+  previewRows?: DatasetRow[] | null;
+  gapsDetected?: number | null;
+  nullsRemoved?: number | null;
+  isPrepared: boolean;
+  preparationReport?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PrepareDatasetOptions {
+  removeNulls?: boolean;
+  detectGaps?: boolean;
+  normalize?: boolean;
+}
+
 export type UploadStrategyBody = {
   file: Blob;
   name?: string;
   description?: string;
+};
+
+export type UploadDatasetBody = {
+  file: Blob;
+  asset?: string;
+  timeframe?: string;
+  name?: string;
 };

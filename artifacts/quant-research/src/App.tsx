@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout";
 import Dashboard from "@/pages/dashboard";
 import StrategiesList from "@/pages/strategies/list";
 import StrategyDetail from "@/pages/strategies/detail";
+import DataPage from "@/pages/data/index";
 import RunsList from "@/pages/runs/list";
 import RunDetail from "@/pages/runs/detail";
 
@@ -27,6 +28,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/strategies" component={StrategiesList} />
         <Route path="/strategies/:id" component={StrategyDetail} />
+        <Route path="/data" component={DataPage} />
         <Route path="/runs" component={RunsList} />
         <Route path="/runs/:id" component={RunDetail} />
         <Route component={NotFound} />

@@ -51,3 +51,29 @@ export const stepResultsTable = pgTable("step_results", {
 export const insertStepResultSchema = createInsertSchema(stepResultsTable).omit({ id: true });
 export type InsertStepResult = z.infer<typeof insertStepResultSchema>;
 export type StepResult = typeof stepResultsTable.$inferSelect;
+
+export const datasetsTable = pgTable("datasets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  asset: text("asset"),
+  timeframe: text("timeframe"),
+  fileName: text("file_name").notNull(),
+  fileType: text("file_type").notNull(),
+  fileContent: text("file_content").notNull(),
+  rowCount: integer("row_count").notNull().default(0),
+  columns: jsonb("columns").notNull().default([]),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  columnStats: jsonb("column_stats"),
+  previewRows: jsonb("preview_rows"),
+  gapsDetected: integer("gaps_detected"),
+  nullsRemoved: integer("nulls_removed"),
+  isPrepared: integer("is_prepared").notNull().default(0),
+  preparationReport: text("preparation_report"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertDatasetSchema = createInsertSchema(datasetsTable).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDataset = z.infer<typeof insertDatasetSchema>;
+export type Dataset = typeof datasetsTable.$inferSelect;

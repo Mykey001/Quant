@@ -67,6 +67,147 @@ export const DeleteStrategyParams = zod.object({
 });
 
 /**
+ * @summary List all imported datasets
+ */
+export const ListDatasetsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  asset: zod.string().nullish(),
+  timeframe: zod.string().nullish(),
+  fileName: zod.string(),
+  fileType: zod.string(),
+  rowCount: zod.number(),
+  columns: zod.array(zod.string()),
+  startDate: zod.string().nullish(),
+  endDate: zod.string().nullish(),
+  columnStats: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        min: zod.number().nullish(),
+        max: zod.number().nullish(),
+        mean: zod.number().nullish(),
+        std: zod.number().nullish(),
+        nullCount: zod.number(),
+      }),
+    )
+    .nullish(),
+  previewRows: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
+  gapsDetected: zod.number().nullish(),
+  nullsRemoved: zod.number().nullish(),
+  isPrepared: zod.boolean(),
+  preparationReport: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const ListDatasetsResponse = zod.array(ListDatasetsResponseItem);
+
+/**
+ * @summary Upload a market data file (CSV or JSON)
+ */
+export const UploadDatasetBody = zod.object({
+  file: zod.instanceof(File),
+  asset: zod.string().optional(),
+  timeframe: zod.string().optional(),
+  name: zod.string().optional(),
+});
+
+/**
+ * @summary Get dataset details with preview rows
+ */
+export const GetDatasetParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetDatasetResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  asset: zod.string().nullish(),
+  timeframe: zod.string().nullish(),
+  fileName: zod.string(),
+  fileType: zod.string(),
+  rowCount: zod.number(),
+  columns: zod.array(zod.string()),
+  startDate: zod.string().nullish(),
+  endDate: zod.string().nullish(),
+  columnStats: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        min: zod.number().nullish(),
+        max: zod.number().nullish(),
+        mean: zod.number().nullish(),
+        std: zod.number().nullish(),
+        nullCount: zod.number(),
+      }),
+    )
+    .nullish(),
+  previewRows: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
+  gapsDetected: zod.number().nullish(),
+  nullsRemoved: zod.number().nullish(),
+  isPrepared: zod.boolean(),
+  preparationReport: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Delete a dataset
+ */
+export const DeleteDatasetParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Run data preparation (cleaning, gap detection, normalization)
+ */
+export const PrepareDatasetParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const prepareDatasetBodyRemoveNullsDefault = true;
+export const prepareDatasetBodyDetectGapsDefault = true;
+export const prepareDatasetBodyNormalizeDefault = false;
+
+export const PrepareDatasetBody = zod.object({
+  removeNulls: zod.boolean().default(prepareDatasetBodyRemoveNullsDefault),
+  detectGaps: zod.boolean().default(prepareDatasetBodyDetectGapsDefault),
+  normalize: zod.boolean().default(prepareDatasetBodyNormalizeDefault),
+});
+
+export const PrepareDatasetResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  asset: zod.string().nullish(),
+  timeframe: zod.string().nullish(),
+  fileName: zod.string(),
+  fileType: zod.string(),
+  rowCount: zod.number(),
+  columns: zod.array(zod.string()),
+  startDate: zod.string().nullish(),
+  endDate: zod.string().nullish(),
+  columnStats: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        min: zod.number().nullish(),
+        max: zod.number().nullish(),
+        mean: zod.number().nullish(),
+        std: zod.number().nullish(),
+        nullCount: zod.number(),
+      }),
+    )
+    .nullish(),
+  previewRows: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
+  gapsDetected: zod.number().nullish(),
+  nullsRemoved: zod.number().nullish(),
+  isPrepared: zod.boolean(),
+  preparationReport: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
  * @summary Parse and return input parameters from strategy file
  */
 export const GetStrategyParametersParams = zod.object({

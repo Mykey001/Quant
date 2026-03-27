@@ -19,11 +19,14 @@ import type {
 import type {
   AnalysisOptions,
   AnalysisRun,
+  Dataset,
   ErrorResponse,
   HealthStatus,
+  PrepareDatasetOptions,
   StepResult,
   Strategy,
   StrategyParameter,
+  UploadDatasetBody,
   UploadStrategyBody,
 } from "./api.schemas";
 
@@ -450,6 +453,436 @@ export const useDeleteStrategy = <
   TContext
 > => {
   return useMutation(getDeleteStrategyMutationOptions(options));
+};
+
+/**
+ * @summary List all imported datasets
+ */
+export const getListDatasetsUrl = () => {
+  return `/api/datasets`;
+};
+
+export const listDatasets = async (
+  options?: RequestInit,
+): Promise<Dataset[]> => {
+  return customFetch<Dataset[]>(getListDatasetsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListDatasetsQueryKey = () => {
+  return [`/api/datasets`] as const;
+};
+
+export const getListDatasetsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listDatasets>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listDatasets>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListDatasetsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listDatasets>>> = ({
+    signal,
+  }) => listDatasets({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listDatasets>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListDatasetsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listDatasets>>
+>;
+export type ListDatasetsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all imported datasets
+ */
+
+export function useListDatasets<
+  TData = Awaited<ReturnType<typeof listDatasets>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listDatasets>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDatasetsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Upload a market data file (CSV or JSON)
+ */
+export const getUploadDatasetUrl = () => {
+  return `/api/datasets`;
+};
+
+export const uploadDataset = async (
+  uploadDatasetBody: UploadDatasetBody,
+  options?: RequestInit,
+): Promise<Dataset> => {
+  const formData = new FormData();
+  formData.append(`file`, uploadDatasetBody.file);
+  if (uploadDatasetBody.asset !== undefined) {
+    formData.append(`asset`, uploadDatasetBody.asset);
+  }
+  if (uploadDatasetBody.timeframe !== undefined) {
+    formData.append(`timeframe`, uploadDatasetBody.timeframe);
+  }
+  if (uploadDatasetBody.name !== undefined) {
+    formData.append(`name`, uploadDatasetBody.name);
+  }
+
+  return customFetch<Dataset>(getUploadDatasetUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadDatasetMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadDataset>>,
+    TError,
+    { data: BodyType<UploadDatasetBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadDataset>>,
+  TError,
+  { data: BodyType<UploadDatasetBody> },
+  TContext
+> => {
+  const mutationKey = ["uploadDataset"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadDataset>>,
+    { data: BodyType<UploadDatasetBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return uploadDataset(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadDatasetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadDataset>>
+>;
+export type UploadDatasetMutationBody = BodyType<UploadDatasetBody>;
+export type UploadDatasetMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Upload a market data file (CSV or JSON)
+ */
+export const useUploadDataset = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadDataset>>,
+    TError,
+    { data: BodyType<UploadDatasetBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadDataset>>,
+  TError,
+  { data: BodyType<UploadDatasetBody> },
+  TContext
+> => {
+  return useMutation(getUploadDatasetMutationOptions(options));
+};
+
+/**
+ * @summary Get dataset details with preview rows
+ */
+export const getGetDatasetUrl = (id: number) => {
+  return `/api/datasets/${id}`;
+};
+
+export const getDataset = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Dataset> => {
+  return customFetch<Dataset>(getGetDatasetUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDatasetQueryKey = (id: number) => {
+  return [`/api/datasets/${id}`] as const;
+};
+
+export const getGetDatasetQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDataset>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDataset>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDatasetQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getDataset>>> = ({
+    signal,
+  }) => getDataset(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDataset>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDatasetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDataset>>
+>;
+export type GetDatasetQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get dataset details with preview rows
+ */
+
+export function useGetDataset<
+  TData = Awaited<ReturnType<typeof getDataset>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDataset>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDatasetQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a dataset
+ */
+export const getDeleteDatasetUrl = (id: number) => {
+  return `/api/datasets/${id}`;
+};
+
+export const deleteDataset = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteDatasetUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteDatasetMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDataset>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteDataset>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteDataset"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteDataset>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteDataset(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteDatasetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteDataset>>
+>;
+
+export type DeleteDatasetMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a dataset
+ */
+export const useDeleteDataset = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDataset>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteDataset>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteDatasetMutationOptions(options));
+};
+
+/**
+ * @summary Run data preparation (cleaning, gap detection, normalization)
+ */
+export const getPrepareDatasetUrl = (id: number) => {
+  return `/api/datasets/${id}/prepare`;
+};
+
+export const prepareDataset = async (
+  id: number,
+  prepareDatasetOptions?: PrepareDatasetOptions,
+  options?: RequestInit,
+): Promise<Dataset> => {
+  return customFetch<Dataset>(getPrepareDatasetUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(prepareDatasetOptions),
+  });
+};
+
+export const getPrepareDatasetMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareDataset>>,
+    TError,
+    { id: number; data: BodyType<PrepareDatasetOptions> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof prepareDataset>>,
+  TError,
+  { id: number; data: BodyType<PrepareDatasetOptions> },
+  TContext
+> => {
+  const mutationKey = ["prepareDataset"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof prepareDataset>>,
+    { id: number; data: BodyType<PrepareDatasetOptions> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return prepareDataset(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PrepareDatasetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof prepareDataset>>
+>;
+export type PrepareDatasetMutationBody = BodyType<PrepareDatasetOptions>;
+export type PrepareDatasetMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Run data preparation (cleaning, gap detection, normalization)
+ */
+export const usePrepareDataset = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareDataset>>,
+    TError,
+    { id: number; data: BodyType<PrepareDatasetOptions> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof prepareDataset>>,
+  TError,
+  { id: number; data: BodyType<PrepareDatasetOptions> },
+  TContext
+> => {
+  return useMutation(getPrepareDatasetMutationOptions(options));
 };
 
 /**

@@ -15,6 +15,8 @@ tags:
     description: Analysis operations
   - name: runs
     description: Analysis run management
+  - name: datasets
+    description: Market data import and preparation
 paths:
   /healthz:
     get:
@@ -109,6 +111,125 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /datasets:
+    get:
+      operationId: listDatasets
+      tags: [datasets]
+      summary: List all imported datasets
+      responses:
+        "200":
+          description: List of datasets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Dataset"
+    post:
+      operationId: uploadDataset
+      tags: [datasets]
+      summary: Upload a market data file (CSV or JSON)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                asset:
+                  type: string
+                timeframe:
+                  type: string
+                name:
+                  type: string
+              required:
+                - file
+      responses:
+        "201":
+          description: Dataset uploaded and parsed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /datasets/{id}:
+    get:
+      operationId: getDataset
+      tags: [datasets]
+      summary: Get dataset details with preview rows
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dataset detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteDataset
+      tags: [datasets]
+      summary: Delete a dataset
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /datasets/{id}/prepare:
+    post:
+      operationId: prepareDataset
+      tags: [datasets]
+      summary: Run data preparation (cleaning, gap detection, normalization)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrepareDatasetOptions"
+      responses:
+        "200":
+          description: Preparation complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /strategies/{id}/parameters:
     get:
@@ -439,3 +560,110 @@ components:
         - stepNumber
         - stepName
         - status
+
+    ColumnStats:
+      type: object
+      properties:
+        name:
+          type: string
+        min:
+          type: number
+          nullable: true
+        max:
+          type: number
+          nullable: true
+        mean:
+          type: number
+          nullable: true
+        std:
+          type: number
+          nullable: true
+        nullCount:
+          type: integer
+      required:
+        - name
+        - nullCount
+
+    DatasetRow:
+      type: object
+      additionalProperties: true
+
+    Dataset:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        asset:
+          type: string
+          nullable: true
+        timeframe:
+          type: string
+          nullable: true
+        fileName:
+          type: string
+        fileType:
+          type: string
+        rowCount:
+          type: integer
+        columns:
+          type: array
+          items:
+            type: string
+        startDate:
+          type: string
+          nullable: true
+        endDate:
+          type: string
+          nullable: true
+        columnStats:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnStats"
+          nullable: true
+        previewRows:
+          type: array
+          items:
+            $ref: "#/components/schemas/DatasetRow"
+          nullable: true
+        gapsDetected:
+          type: integer
+          nullable: true
+        nullsRemoved:
+          type: integer
+          nullable: true
+        isPrepared:
+          type: boolean
+        preparationReport:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - fileName
+        - fileType
+        - rowCount
+        - columns
+        - isPrepared
+        - createdAt
+        - updatedAt
+
+    PrepareDatasetOptions:
+      type: object
+      properties:
+        removeNulls:
+          type: boolean
+          default: true
+        detectGaps:
+          type: boolean
+          default: true
+        normalize:
+          type: boolean
+          default: false

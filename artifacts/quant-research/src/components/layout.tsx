@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Activity, FolderCode, Terminal, LayoutDashboard, Settings, Menu, X } from "lucide-react";
+import { Activity, FolderCode, Terminal, LayoutDashboard, Settings, Menu, X, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,6 +11,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/strategies", label: "Strategies", icon: FolderCode },
+    { href: "/data", label: "Data", icon: Database },
     { href: "/runs", label: "Analysis Runs", icon: Activity },
   ];
 
