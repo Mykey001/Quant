@@ -3,6 +3,7 @@ import multer from "multer";
 import { db, strategiesTable, analysisRunsTable, stepResultsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { runAnalysisPipeline } from "../lib/analysis-pipeline.js";
+import { parseParameters, applyParametersToContent, type StrategyParameter } from "../lib/parameter-parser.js";
 
 const router: IRouter = Router();
 const storage = multer.memoryStorage();
@@ -91,6 +92,56 @@ router.delete("/strategies/:id", async (req: Request, res: Response) => {
   } catch (err) {
     req.log.error({ err }, "Failed to delete strategy");
     res.status(500).json({ error: "internal_error", message: "Failed to delete strategy" });
+  }
+});
+
+router.get("/strategies/:id/parameters", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [strategy] = await db.select().from(strategiesTable).where(eq(strategiesTable.id, id));
+    if (!strategy) {
+      res.status(404).json({ error: "not_found", message: "Strategy not found" });
+      return;
+    }
+    const params = parseParameters(strategy.fileContent, strategy.fileType);
+    res.json(params);
+  } catch (err) {
+    req.log.error({ err }, "Failed to parse parameters");
+    res.status(500).json({ error: "internal_error", message: "Failed to parse parameters" });
+  }
+});
+
+router.put("/strategies/:id/parameters", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [strategy] = await db.select().from(strategiesTable).where(eq(strategiesTable.id, id));
+    if (!strategy) {
+      res.status(404).json({ error: "not_found", message: "Strategy not found" });
+      return;
+    }
+
+    const incomingParams = req.body as StrategyParameter[];
+    if (!Array.isArray(incomingParams)) {
+      res.status(400).json({ error: "bad_request", message: "Body must be an array of parameters" });
+      return;
+    }
+
+    const updatedContent = applyParametersToContent(
+      strategy.fileContent,
+      strategy.fileType,
+      incomingParams
+    );
+
+    const [updated] = await db
+      .update(strategiesTable)
+      .set({ fileContent: updatedContent, updatedAt: new Date() })
+      .where(eq(strategiesTable.id, id))
+      .returning();
+
+    res.json(updated);
+  } catch (err) {
+    req.log.error({ err }, "Failed to update parameters");
+    res.status(500).json({ error: "internal_error", message: "Failed to update parameters" });
   }
 });
 

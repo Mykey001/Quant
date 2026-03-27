@@ -67,6 +67,60 @@ export const DeleteStrategyParams = zod.object({
 });
 
 /**
+ * @summary Parse and return input parameters from strategy file
+ */
+export const GetStrategyParametersParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetStrategyParametersResponseItem = zod.object({
+  name: zod.string(),
+  label: zod.string(),
+  value: zod.string(),
+  type: zod.enum(["int", "double", "bool", "string", "color", "enum"]),
+  description: zod.string().optional(),
+  options: zod.array(zod.string()).nullish(),
+  min: zod.number().nullish(),
+  max: zod.number().nullish(),
+});
+export const GetStrategyParametersResponse = zod.array(
+  GetStrategyParametersResponseItem,
+);
+
+/**
+ * @summary Update input parameter values in the strategy file
+ */
+export const UpdateStrategyParametersParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateStrategyParametersBodyItem = zod.object({
+  name: zod.string(),
+  label: zod.string(),
+  value: zod.string(),
+  type: zod.enum(["int", "double", "bool", "string", "color", "enum"]),
+  description: zod.string().optional(),
+  options: zod.array(zod.string()).nullish(),
+  min: zod.number().nullish(),
+  max: zod.number().nullish(),
+});
+export const UpdateStrategyParametersBody = zod.array(
+  UpdateStrategyParametersBodyItem,
+);
+
+export const UpdateStrategyParametersResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string().optional(),
+  fileType: zod.enum(["mq5", "pine", "python", "mql4", "txt", "other"]),
+  fileName: zod.string(),
+  fileContent: zod.string(),
+  strategyType: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
  * @summary Start the 10-step analysis pipeline
  */
 export const StartAnalysisParams = zod.object({

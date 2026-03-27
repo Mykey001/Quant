@@ -14,6 +14,29 @@ export interface ErrorResponse {
   message: string;
 }
 
+export type StrategyParameterType =
+  (typeof StrategyParameterType)[keyof typeof StrategyParameterType];
+
+export const StrategyParameterType = {
+  int: "int",
+  double: "double",
+  bool: "bool",
+  string: "string",
+  color: "color",
+  enum: "enum",
+} as const;
+
+export interface StrategyParameter {
+  name: string;
+  label: string;
+  value: string;
+  type: StrategyParameterType;
+  description?: string;
+  options?: string[] | null;
+  min?: number | null;
+  max?: number | null;
+}
+
 export type StrategyFileType =
   (typeof StrategyFileType)[keyof typeof StrategyFileType];
 

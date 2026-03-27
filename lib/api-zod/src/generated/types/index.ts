@@ -16,4 +16,6 @@ export * from "./stepResultMetrics";
 export * from "./stepResultStatus";
 export * from "./strategy";
 export * from "./strategyFileType";
+export * from "./strategyParameter";
+export * from "./strategyParameterType";
 export * from "./uploadStrategyBody";
