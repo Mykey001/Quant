@@ -52,8 +52,12 @@ function computeColumnStats(headers: string[], rows: Record<string, string>[]) {
 
     if (nums.length === 0) return { name, min: null, max: null, mean: null, std: null, nullCount };
 
-    const min = Math.min(...nums);
-    const max = Math.max(...nums);
+    let min = nums[0];
+    let max = nums[0];
+    for (let i = 1; i < nums.length; i++) {
+        if (nums[i] < min) min = nums[i];
+        if (nums[i] > max) max = nums[i];
+    }
     const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
     const variance = nums.reduce((a, b) => a + (b - mean) ** 2, 0) / nums.length;
     const std = Math.sqrt(variance);
@@ -93,7 +97,10 @@ function detectGaps(rows: Record<string, string>[], dateCol: string | null): num
   if (timestamps.length < 2) return 0;
 
   const diffs = timestamps.slice(1).map((t, i) => t - timestamps[i]);
-  const minDiff = Math.min(...diffs);
+  let minDiff = diffs[0];
+  for (let i = 1; i < diffs.length; i++) {
+      if (diffs[i] < minDiff) minDiff = diffs[i];
+  }
   if (minDiff <= 0) return 0;
 
   return diffs.filter(d => d > minDiff * 1.5).length;

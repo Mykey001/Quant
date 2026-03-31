@@ -1,7 +1,7 @@
-import { openai } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { analysisRunsTable, stepResultsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const STEP_NAMES = [
   "Strategy Deconstruction",
@@ -212,6 +212,14 @@ export async function runAnalysisPipeline(
   strategyFileContent: string,
   fileType: string
 ): Promise<void> {
+  const apiKey = process.env.GEMINI_API_KEY || "";
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not set.");
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
   let previousStepsSummary = "";
 
   for (let stepNumber = 1; stepNumber <= 10; stepNumber++) {
@@ -225,30 +233,24 @@ export async function runAnalysisPipeline(
     await db
       .update(stepResultsTable)
       .set({ status: "running", startedAt: new Date() })
-      .where(eq(stepResultsTable.runId, runId) && eq(stepResultsTable.stepNumber, stepNumber));
+      .where(and(eq(stepResultsTable.runId, runId), eq(stepResultsTable.stepNumber, stepNumber)));
 
     try {
       const prompt = STEP_PROMPTS[stepNumber - 1](strategyFileContent, fileType, previousStepsSummary);
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-5-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an advanced quantitative research agent specializing in algorithmic trading, machine learning, and systematic strategy optimization. Provide detailed, actionable analysis.",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 1500,
-        temperature: 0.3,
+      const result = await geminiModel.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: 2048,
+          temperature: 0.2,
+        },
       });
-
-      const rawText = response.choices[0]?.message?.content ?? "";
+      const response = await result.response;
+      const rawText = response.text();
       const metrics = extractMetrics(rawText);
       const findings = cleanFindings(rawText);
 
-      previousStepsSummary += `\n\n=== Step ${stepNumber}: ${stepName} ===\n${findings.slice(0, 500)}`;
+      previousStepsSummary += `\n\n=== Step ${stepNumber}: ${stepName} ===\n${findings}`;
 
       await db
         .update(stepResultsTable)
@@ -258,7 +260,7 @@ export async function runAnalysisPipeline(
           metrics,
           completedAt: new Date(),
         })
-        .where(eq(stepResultsTable.runId, runId) && eq(stepResultsTable.stepNumber, stepNumber));
+        .where(and(eq(stepResultsTable.runId, runId), eq(stepResultsTable.stepNumber, stepNumber)));
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       await db
@@ -268,7 +270,7 @@ export async function runAnalysisPipeline(
           findings: `Error during analysis: ${errorMsg}`,
           completedAt: new Date(),
         })
-        .where(eq(stepResultsTable.runId, runId) && eq(stepResultsTable.stepNumber, stepNumber));
+        .where(and(eq(stepResultsTable.runId, runId), eq(stepResultsTable.stepNumber, stepNumber)));
     }
   }
 
